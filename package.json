@@ -1,0 +1,27 @@
+{
+  "name": "output-events-metadata",
+  "version": "1.0.0",
+  "description": "Plugin to append device metadata",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Yousef Lasi",
+  "license": "Apache-2.0",
+  "dependencies": {
+  },
+  "devDependencies": {
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/razb/output-events-metadata"
+  },
+  "keywords": [
+    "logagent",
+    "filter",
+    "events",
+    "plugin"
+  ],
+  "bugs": {},
+  "homepage": "https://github.com/razb/output-events-metadata#readme"
+}
