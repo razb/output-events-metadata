@@ -38,10 +38,16 @@ function eventsCustomMeta(context, config, eventEmitter, data, callback) {
                         }
                     })
                 }
+                if (data.message && !data.level ) {
+                data.level = data.message.toLowerCase().indexOf('error') >= 0 ? 'ERROR' : data.message.toLowerCase().indexOf('warn') >= 0 ? 'WARNING' : 'INFO'
+                }
                 if (debug) console.log(data)
                 return callback(null, data)
             }
         } else {
+                if (data.message && !data.level ) {
+                data.level = data.message.toLowerCase().indexOf('error') >= 0 ? 'ERROR' : data.message.toLowerCase().indexOf('warn') >= 0 ? 'WARNING' : 'INFO'
+                }
             return callback(null, data)
         }
     } catch (ex) {
