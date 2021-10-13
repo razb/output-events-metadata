@@ -22,14 +22,17 @@ function eventsCustomMeta(context, config, eventEmitter, data, callback) {
                                     if (!data[newkey]) {
                                         data[newkey] = {}
                                         data[newkey][val.split('.')[1]] = data[key];
+                                        delete data[key]
                                         mapped[newkey] = true
                                     } else {
                                         data[newkey][val.split('.')[1]] = data[key]
+                                        delete data[key]
                                     }
                                 }
                             } else {
                                 if (!data[val]) {
                                     data[val] = data[key]
+                                    delete data[key]
                                 }
                             }
                         }
