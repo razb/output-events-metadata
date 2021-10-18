@@ -2,6 +2,7 @@ function eventsCustomMeta(context, config, eventEmitter, data, callback) {
     let meta = config.meta || false
     let debug = config.debug || false
     let mapping = config.mapping || false
+    let levels = config.levels || false
     if (data === undefined) {
         return callback(new Error('data is null'), null)
     }
@@ -49,6 +50,9 @@ function eventsCustomMeta(context, config, eventEmitter, data, callback) {
                 data.level = data.message.toLowerCase().indexOf('error') >= 0 ? 'ERROR' : data.message.toLowerCase().indexOf('warn') >= 0 ? 'WARNING' : 'INFO'
                 }
             return callback(null, data)
+        }
+        if ( data && data.level && levels ) {
+        level.map( x => { if ( data.level.toUpperCase().indexOf(x) >= 0 ) data.level = x })
         }
     } catch (ex) {
         console.log(data, 'exception', ex)
