@@ -39,21 +39,22 @@ function eventsCustomMeta(context, config, eventEmitter, data, callback) {
                         }
                     })
                 }
-                if (data.message && !data.level ) {
-                data.level = data.message.toLowerCase().indexOf('error') >= 0 ? 'ERROR' : data.message.toLowerCase().indexOf('warn') >= 0 ? 'WARNING' : 'INFO'
+                if (data.message && !data.level) {
+                    data.level = data.message.toLowerCase().indexOf('error') >= 0 ? 'ERROR' : data.message.toLowerCase().indexOf('warn') >= 0 ? 'WARNING' : 'INFO'
                 }
-                if (debug) console.log(data)
-                return callback(null, data)
             }
         } else {
-                if (data.message && !data.level ) {
+            if (data.message && !data.level) {
                 data.level = data.message.toLowerCase().indexOf('error') >= 0 ? 'ERROR' : data.message.toLowerCase().indexOf('warn') >= 0 ? 'WARNING' : 'INFO'
-                }
-            return callback(null, data)
+            }
         }
-        if ( data && data.level && levels ) {
-        level.map( x => { if ( data.level.toUpperCase().indexOf(x) >= 0 ) data.level = x })
+        if (data && data.level && levels) {
+            levels.map(x => {
+                if (data.level.toUpperCase().indexOf(x) >= 0) data.level = x
+            })
         }
+        if (debug) console.log(data)
+        return callback(null, data)
     } catch (ex) {
         console.log(data, 'exception', ex)
         return callback(null, data)
