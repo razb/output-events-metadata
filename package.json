@@ -9,9 +9,9 @@
   "author": "Yousef Lasi",
   "license": "Apache-2.0",
   "dependencies": {
+    "xml2js": "^0.4.23"
   },
-  "devDependencies": {
-  },
+  "devDependencies": {},
   "repository": {
     "type": "git",
     "url": "git+https://github.com/razb/output-events-metadata"

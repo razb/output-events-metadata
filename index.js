@@ -1,26 +1,60 @@
 const os = require('os')
-function getStoreMeta () {
-let storemeta = {}
-let hostname = os.hostname()
-let ip = undefined
-let interfaces = os.networkInterfaces()
-let regex = new RegExp(/10\..*/)
-if ( interfaces && Object.keys(interfaces) && Object.keys(interfaces).length > 0 ) {
-interfaces = Object.keys(interfaces).map( x => interfaces[x][0])
-let interface = interfaces.find( x => regex.test(x.address))
-if ( interface ) ip = interface.address
+const xml2js = require('xml2js')
+const xmlparser = new xml2js.Parser()
+let storemeta = undefined
+
+function getStoreMeta(debug, auto) {
+    if (debug) console.warn('Initializing store metadata')
+    storemeta = {}
+    //let hostname = os.hostname()
+    let offset = (new Date().getTimezoneOffset())
+    let hostname = 'US12345WST25'
+    let ip = undefined
+    let interfaces = os.networkInterfaces()
+    let regex = auto.ipmatch ? new RegExp(auto.ipmatch) : new RegExp(/10\..*/)
+    if (interfaces && Object.keys(interfaces) && Object.keys(interfaces).length > 0) {
+        interfaces = Object.keys(interfaces).map(x => interfaces[x][0])
+        let interface = interfaces.find(x => regex.test(x.address))
+        if (interface) ip = interface.address
+    }
+    if (hostname && typeof(hostname) == 'string' ) {
+        if ( hostname.length === 12 ) {
+        storemeta.store = {
+            number: hostname.substr(2, 5),
+            utcOffset: offset
+        }
+        storemeta.device = {
+            type: hostname.substr(7, 3),
+            number: hostname.substr(10, 2)
+        }
+        storemeta.country = hostname.substr(0, 2)
+        }
+        storemeta.host = {
+            name: hostname,
+        }
+        ip && ( storemeta.host.ip = ip);
+    }
+    return storemeta
 }
-if ( hostname && typeof(hostname) == 'string' && hostname.length == 12 ) {
-storemeta.store = { number: hostname.substr(2,5)}
-storemeta.device = { type: hostname.substr(7,3), number: hostname.substr(10,2) }
-storemeta.country = hostname.substr(0,2)
-storemeta.host = { name: hostname, ip: ip }
+async function getXMLMeta(file, keys) {
+    let xml = fs.readFileSync(file, 'utf8')
+    try {
+        let data = await xmlparser(xml)
+        let obj = {}
+        keys.map(key => {
+            if (data[key]) obj[key] = data[key]
+        })
+        return obj;
+    } catch (err) {
+        console.log(err)
+        return {}
+    }
 }
-return storemeta
-}
+
 function eventsCustomMeta(context, config, eventEmitter, data, callback) {
     let meta = config.meta || false
     let tags = config.tags || false
+    let xmlmeta = config.xml || false
     let debug = config.debug || false
     let mapping = config.mapping || false
     let levels = config.levels || false
@@ -31,18 +65,19 @@ function eventsCustomMeta(context, config, eventEmitter, data, callback) {
         if (meta) {
             if (Object.keys(meta).length > 0) {
                 Object.keys(meta).map(key => {
-                    if ( key !== 'auto') {
-                    if (!data[key]) data[key] = meta[key]
+                    if (key !== 'auto') {
+                        if (!data[key]) data[key] = meta[key]
                     }
                 })
             }
-        let storemeta = getStoreMeta()
-        console.log(storemeta);
-        if ( storemeta && meta.auto ) {
-        Object.keys(storemeta).map( key => {
+            if ( meta.auto) {
+            storemeta = storemeta || getStoreMeta(debug, meta.auto)
+            if (storemeta) {
+                Object.keys(storemeta).map(key => {
                     if (!data[key]) data[key] = storemeta[key]
-        })
-        }
+                })
+            }
+            }
         }
 
         if (tags && tags.length > 0) {
