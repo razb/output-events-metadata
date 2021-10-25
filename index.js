@@ -1,3 +1,23 @@
+const os = require('os')
+function getStoreMeta () {
+let storemeta = {}
+let hostname = os.hostname()
+let ip = undefined
+let interfaces = os.networkInterfaces()
+let regex = new RegExp(/10\..*/)
+if ( interfaces && Object.keys(interfaces) && Object.keys(interfaces).length > 0 ) {
+interfaces = Object.keys(interfaces).map( x => interfaces[x][0])
+let interface = interfaces.find( x => regex.test(x.address))
+if ( interface ) ip = interface.address
+}
+if ( hostname && typeof(hostname) == 'string' && hostname.length == 12 ) {
+storemeta.store = { number: hostname.substr(2,5)}
+storemeta.device = { type: hostname.substr(7,3), number: hostname.substr(10,2) }
+storemeta.country = hostname.substr(0,2)
+storemeta.host = { name: hostname, ip: ip }
+}
+return storemeta
+}
 function eventsCustomMeta(context, config, eventEmitter, data, callback) {
     let meta = config.meta || false
     let tags = config.tags || false
@@ -11,10 +31,20 @@ function eventsCustomMeta(context, config, eventEmitter, data, callback) {
         if (meta) {
             if (Object.keys(meta).length > 0) {
                 Object.keys(meta).map(key => {
+                    if ( key !== 'auto') {
                     if (!data[key]) data[key] = meta[key]
+                    }
                 })
             }
+        let storemeta = getStoreMeta()
+        console.log(storemeta);
+        if ( storemeta && meta.auto ) {
+        Object.keys(storemeta).map( key => {
+                    if (!data[key]) data[key] = storemeta[key]
+        })
         }
+        }
+
         if (tags && tags.length > 0) {
             let match, matchValue, matched = false;
             tags.map(tag => {
