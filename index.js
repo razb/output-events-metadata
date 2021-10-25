@@ -6,9 +6,9 @@ let storemeta = undefined
 function getStoreMeta(debug, auto) {
     if (debug) console.warn('Initializing store metadata')
     storemeta = {}
-    //let hostname = os.hostname()
+    let hostname = os.hostname()
+    //let hostname = 'US12345WST25'
     let offset = (new Date().getTimezoneOffset())
-    let hostname = 'US12345WST25'
     let ip = undefined
     let interfaces = os.networkInterfaces()
     let regex = auto.ipmatch ? new RegExp(auto.ipmatch) : new RegExp(/10\..*/)
