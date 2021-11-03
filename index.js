@@ -1,7 +1,11 @@
 const os = require('os')
+const fs = require('fs')
+const merge = require('merge-deep')
 const xml2js = require('xml2js')
 const xmlparser = new xml2js.Parser()
+const safeEval = require('safe-eval')
 let storemeta = undefined
+let xmlmeta = undefined
 
 function getStoreMeta(debug, auto) {
     if (debug) console.warn('Initializing store metadata')
@@ -17,33 +21,47 @@ function getStoreMeta(debug, auto) {
         let interface = interfaces.find(x => regex.test(x.address))
         if (interface) ip = interface.address
     }
-    if (hostname && typeof(hostname) == 'string' ) {
-        if ( hostname.length === 12 ) {
-        storemeta.store = {
-            number: hostname.substr(2, 5),
-            utcOffset: offset
-        }
-        storemeta.device = {
-            type: hostname.substr(7, 3),
-            number: hostname.substr(10, 2)
-        }
-        storemeta.country = hostname.substr(0, 2)
+    if (hostname && typeof(hostname) == 'string') {
+        if (hostname.length === 12) {
+            storemeta.store = {
+                number: hostname.substr(2, 5),
+                utcOffset: offset
+            }
+            storemeta.device = {
+                type: hostname.substr(7, 3),
+                number: hostname.substr(10, 2)
+            }
+            storemeta.country = hostname.substr(0, 2)
         }
         storemeta.host = {
             name: hostname,
         }
-        ip && ( storemeta.host.ip = ip);
+        ip && (storemeta.host.ip = ip);
     }
     return storemeta
 }
-async function getXMLMeta(file, keys) {
+async function getXMLMeta(file, keys, debug) {
     let xml = fs.readFileSync(file, 'utf8')
     try {
-        let data = await xmlparser(xml)
-        let obj = {}
+        let data = await xmlparser.parseStringPromise(xml)
+        let object, obj = {}
         keys.map(key => {
-            if (data[key]) obj[key] = data[key]
+            if (debug) {
+                console.log(key)
+            }
+            let context = {
+                "xml": data
+            }
+            let source = key.source
+            let value = safeEval(source, context)
+            if (debug) console.log(value)
+            if (value && value[0]) {
+                object = objValue(key.field, value[0])
+                if (debug) console.log(object);
+            }
+            obj = merge(obj, object)
         })
+        if (debug) console.log(obj)
         return obj;
     } catch (err) {
         console.log(err)
@@ -51,10 +69,10 @@ async function getXMLMeta(file, keys) {
     }
 }
 
-function eventsCustomMeta(context, config, eventEmitter, data, callback) {
+async function eventsCustomMeta(context, config, eventEmitter, data, callback) {
     let meta = config.meta || false
     let tags = config.tags || false
-    let xmlmeta = config.xml || false
+    let xml = config.xml || false
     let debug = config.debug || false
     let mapping = config.mapping || false
     let levels = config.levels || false
@@ -70,16 +88,28 @@ function eventsCustomMeta(context, config, eventEmitter, data, callback) {
                     }
                 })
             }
-            if ( meta.auto) {
-            storemeta = storemeta || getStoreMeta(debug, meta.auto)
-            if (storemeta) {
-                Object.keys(storemeta).map(key => {
-                    if (!data[key]) data[key] = storemeta[key]
-                })
-            }
+            if (meta.auto) {
+                storemeta = storemeta || getStoreMeta(debug, meta.auto)
+                if (storemeta) {
+                    Object.keys(storemeta).map(key => {
+                        if (!data[key]) data[key] = storemeta[key]
+                    })
+                }
             }
         }
-
+        if (debug && !xmlmeta) console.log('xml', xml);
+        if (xml && xml.file && xml.attributes && xml.attributes.length > 0) {
+            let file = xml.file
+            let attributes = xml.attributes;
+            xmlmeta = xmlmeta || await getXMLMeta(file, attributes, debug)
+            try {
+                if (xmlmeta && Object.keys(xmlmeta).length > 0) {
+                    data = merge(data, xmlmeta)
+                }
+            } catch (err) {
+                console.log(err);
+            }
+        }
         if (tags && tags.length > 0) {
             let match, matchValue, matched = false;
             tags.map(tag => {
@@ -149,5 +179,16 @@ function eventsCustomMeta(context, config, eventEmitter, data, callback) {
         console.log(data, 'exception', ex)
         return callback(null, data)
     }
+}
+
+function objValue(key, value) {
+    let object = {}
+    let result = object
+    var arr = key.split('.');
+    for (var i = 0; i < arr.length - 1; i++) {
+        object = object[arr[i]] = {};
+    }
+    object[arr[arr.length - 1]] = value;
+    return result;
 }
 module.exports = eventsCustomMeta
