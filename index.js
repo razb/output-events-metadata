@@ -17,10 +17,12 @@ function getStoreMeta(debug, auto) {
     let interfaces = os.networkInterfaces()
     let regex = auto.ipmatch ? new RegExp(auto.ipmatch) : new RegExp(/10\..*/)
     if (interfaces && Object.keys(interfaces) && Object.keys(interfaces).length > 0) {
-        interfaces = Object.keys(interfaces).map(x => interfaces[x][0])
-        let interface = interfaces.find(x => regex.test(x.address))
+        Object.keys(interfaces).map( x => {
+        let interface = interfaces[x]
+        interface = interface.find(x => x.address && regex.test(x.address) && !x.address.includes('10.0.'))
         if (interface) ip = interface.address
-    }
+        })
+        }
     if (hostname && typeof(hostname) == 'string') {
         if (hostname.length === 12) {
             storemeta.store = {
