@@ -168,7 +168,7 @@ async function eventsCustomMeta(context, config, eventEmitter, data, callback) {
                 }
             })
         }
-        if (parse && data.service && data.service.name && parse[data.service.name]) {
+        if (parse && !data.parsed && data.service && data.service.name && parse[data.service.name]) {
         let parserules = parse[data.service.name]
         let delimiter = parserules.delimiter
         let event = {}
@@ -182,6 +182,7 @@ async function eventsCustomMeta(context, config, eventEmitter, data, callback) {
             }
         if ( x.rule ) event[x.field] = safeEval(x.rule, context)
         })
+        event.parsed = true;
         data = {...data, ...event}
         }
         }
