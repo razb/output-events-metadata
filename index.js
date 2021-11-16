@@ -177,7 +177,10 @@ async function eventsCustomMeta(context, config, eventEmitter, data, callback) {
         if ( debug ) console.log('Applying parsing rules for ' + data.service.name)
         parserules.attributes.map( (x,i) => {
         event[x.field] = message[i]
-        if ( x.rule ) event[x.field] = eval(x.rule)
+            let context = {
+                "event": event
+            }
+        if ( x.rule ) event[x.field] = safeEval(x.rule, context)
         })
         data = {...data, ...event}
         }
