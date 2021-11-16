@@ -74,6 +74,7 @@ async function getXMLMeta(file, keys, debug) {
 async function eventsCustomMeta(context, config, eventEmitter, data, callback) {
     let meta = config.meta || false
     let tags = config.tags || false
+    let parse = config.parse || false
     let xml = config.xml || false
     let debug = config.debug || false
     let mapping = config.mapping || false
@@ -166,6 +167,20 @@ async function eventsCustomMeta(context, config, eventEmitter, data, callback) {
                     }
                 }
             })
+        }
+        if (parse && data.service && data.service.name && parse[data.service.name]) {
+        let parserules = parse[data.service.name]
+        let delimiter = parserules.delimiter
+        let event = {}
+        let message = data.message.split(delimiter)
+        if (message.length === parserules.attributes.length ) {
+        if ( debug ) console.log('Applying parsing rules for ' + data.service.name)
+        parserules.attributes.map( (x,i) => {
+        event[x.field] = message[i]
+        if ( x.rule ) event[x.field] = eval(x.rule)
+        })
+        data = {...data, ...event}
+        }
         }
         if (data.message && !data.level) {
             data.level = data.message.toLowerCase().indexOf('error') >= 0 ? 'ERROR' : data.message.toLowerCase().indexOf('warn') >= 0 ? 'WARNING' : 'INFO'
