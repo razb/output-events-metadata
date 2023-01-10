@@ -17,12 +17,12 @@ function getStoreMeta(debug, auto) {
     let interfaces = os.networkInterfaces()
     let regex = auto.ipmatch ? new RegExp(auto.ipmatch) : new RegExp(/10\..*/)
     if (interfaces && Object.keys(interfaces) && Object.keys(interfaces).length > 0) {
-        Object.keys(interfaces).map( x => {
-        let interface = interfaces[x]
-        interface = interface.find(x => x.address && regex.test(x.address) && !x.address.includes('10.0.'))
-        if (interface) ip = interface.address
+        Object.keys(interfaces).map(x => {
+            let interface = interfaces[x]
+            interface = interface.find(x => x.address && regex.test(x.address) && !x.address.includes('10.0.'))
+            if (interface) ip = interface.address
         })
-        }
+    }
     if (hostname && typeof(hostname) == 'string') {
         if (hostname.length === 12) {
             storemeta.store = {
@@ -165,26 +165,32 @@ async function eventsCustomMeta(context, config, eventEmitter, data, callback) {
                             delete data[key]
                         }
                     }
+                } else if (key.split('.').length > 1 && data[key.split('.')[0]]) {
+                    let val = mapping[key]
+                    data[val] = data[key.split('.')[0]][key.split('.')[1]]
                 }
             })
         }
         if (parse && !data.parsed && data.service && data.service.name && parse[data.service.name]) {
-        let parserules = parse[data.service.name]
-        let delimiter = parserules.delimiter
-        let event = {}
-        let message = data.message.split(delimiter)
-        if (message.length === parserules.attributes.length ) {
-        if ( debug ) console.log('Applying parsing rules for ' + data.service.name)
-        parserules.attributes.map( (x,i) => {
-        event[x.field] = message[i]
-            let context = {
-                "event": event
+            let parserules = parse[data.service.name]
+            let delimiter = parserules.delimiter
+            let event = {}
+            let message = data.message.split(delimiter)
+            if (message.length === parserules.attributes.length) {
+                if (debug) console.log('Applying parsing rules for ' + data.service.name)
+                parserules.attributes.map((x, i) => {
+                    event[x.field] = message[i]
+                    let context = {
+                        "event": event
+                    }
+                    if (x.rule) event[x.field] = safeEval(x.rule, context)
+                })
+                event.parsed = true;
+                data = {
+                    ...data,
+                    ...event
+                }
             }
-        if ( x.rule ) event[x.field] = safeEval(x.rule, context)
-        })
-        event.parsed = true;
-        data = {...data, ...event}
-        }
         }
         if (data.message && !data.level) {
             data.level = data.message.toLowerCase().indexOf('error') >= 0 ? 'ERROR' : data.message.toLowerCase().indexOf('warn') >= 0 ? 'WARNING' : 'INFO'
